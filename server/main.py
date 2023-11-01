@@ -1,4 +1,5 @@
 import socket
+import DB
 
 PATH = "port.info"
 PORT = 1357  # default port in case port.info file doesn't exist
@@ -23,6 +24,10 @@ def getPort():
 
 
 def serverStart():
+    """
+    this function responsible for setting up a server connection
+    :return: None
+    """
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((IP, PORT))
     server_socket.listen(1)
@@ -36,6 +41,7 @@ def main():
     print("getting port number from port.info file...")
     getPort()
     print("setting up server...")
+    DB.DBFlow()
     serverStart()
 
 
