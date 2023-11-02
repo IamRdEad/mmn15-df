@@ -2,7 +2,7 @@ import sqlite3
 import uuid
 from datetime import datetime
 
-PATH = "defensive.db"  # name of the database file.
+import codes
 
 
 class Client:
@@ -21,9 +21,6 @@ class Client:
         self._PublicKey = PublicKey
         self._LastSeen = LastSeen
         self.AESKey = AESKey
-
-    def __str__(self):
-        return "ID: " + self._ID + " Name: " + self._name
 
     def getName(self):
         return self._name
@@ -48,42 +45,41 @@ class Files:
 ClientsList = []
 FilesList = []
 
+PATH = "defensive.db"  # name of the database file.
+db_con = sqlite3.connect(PATH)
+cur = db_con.cursor()
+
 
 def DBFlow():
     """
      this function responsible for the flow and logic of the database
      :return: None
      """
-    global PATH
-    db_con = sqlite3.connect(PATH)  # connect to the DB file, if it doesn't exist create one
-    cur = db_con.cursor()
-    clientData(db_con, cur)
-    filesData(db_con, cur)
+    clientData()
+    filesData()
 
 
-def clientData(db_con, cur):
+def clientData():
     """
     this function responsible to check if there is a client table. if there is get data otherwise create one
-    :param db_con: connection to the database
-    :param cur: cursor to the database
     :return: None
     """
     table_name = "clients"
     cur.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
     result = cur.fetchone()
     if result:
-        importClients(db_con, cur)
+        importClients()
     else:
-        createClientsTable(db_con, cur)
+        createClientsTable()
 
 
-def importClients(db_con, cur):
+def importClients():
     for row in cur.execute("SELECT * FROM clients"):
         client = Client(row[0], row[1], row[2], row[3], row[4])
         ClientsList.append(client)
 
 
-def createClientsTable(db_con, cur):
+def createClientsTable():
     create_table_sql = '''
         CREATE TABLE clients (
             ID TEXT PRIMARY KEY CHECK(length(Name) <= 32),
@@ -97,29 +93,27 @@ def createClientsTable(db_con, cur):
     db_con.commit()
 
 
-def filesData(db_con, cur):
+def filesData():
     """
     this function responsible to check if there is a files table. if there is get data otherwise create one
-    :param db_con: connection to the database
-    :param cur: cursor to the database
     :return: None
     """
-    table_name = "clients"
+    table_name = "files"
     cur.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
     result = cur.fetchone()
     if result:
-        importFiles(db_con, cur)
+        importFiles()
     else:
-        createFilesTable(db_con, cur)
+        createFilesTable()
 
 
-def importFiles(db_con, cur):
+def importFiles():
     for row in cur.execute("SELECT * FROM files"):
         file = Files(row[0], row[1], row[2], row[3])
         FilesList.append(file)
 
 
-def createFilesTable(db_con, cur):
+def createFilesTable():
     create_table_sql = '''
         CREATE TABLE files (
             ID TEXT PRIMARY KEY CHECK(length(Name) <= 32),
@@ -130,4 +124,30 @@ def createFilesTable(db_con, cur):
         );
         '''
     cur.execute(create_table_sql)
+    db_con.commit()
+
+
+def addClient(ID):
+    """
+    this function register a new user, adds it to the DB and the  client list
+    :param ID: the ID of the new USER
+    :return: if register successful  - 2100, if failed 2101
+    """
+    for client in ClientsList:
+        if client.getName() == ID:
+            print("username is already taken. please try again with different username")
+            return codes.REGISTER_FAIL
+    currentTime = datetime.now()
+    uniqueID = uuid_str = str(uuid.uuid4()).replace("-", "")
+    cur.execute("INSERT INTO clients (ID, Name, publicKey, LastSeen, AESKey) VALUES (?,?, ?, ?, ?)",
+                (uniqueID, ID, '0000', currentTime, '000000'))
+    db_con.commit()
+    for row in cur.execute("SELECT * from clients WHERE Name=Name"):
+        client = Client(row[0], row[1], row[2], row[3], row[4])
+        ClientsList.append(client)
+    return codes.REGISTER_SUC
+
+
+def updateKey(key, UUID):
+    cur.execute("UPDATE clients set publicKey = ? WHERE ID = ?", (key, uuid))
     db_con.commit()
