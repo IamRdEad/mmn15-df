@@ -1,12 +1,16 @@
+import sys
+
 import DB
 import codes
+import responseHandler
 
 
 def findCode(request):
     print("received  new request from client...")
-    print(request)
+    # print(request)
     codeIndex = request.find("Code:")
     code = int(request[codeIndex + 6:codeIndex + 10])
+    # print(code)
     if code == codes.REGISTER:
         register(request)
     elif code == codes.KEY_SEND:
@@ -21,13 +25,22 @@ def findCode(request):
         invalidCRC(request)
     elif code == codes.CRC_FAIL:
         CRCFail(request)
+    else:
+        print("UNKNOWN CODE system will shut down")
+        sys.exit(1)
 
 
 def register(request):
     idIndex = request.find("Name:")
-    ID = request[idIndex + 6:-1]
-    returnCode = DB.addClient(ID)
-    # TO DO: generate a response
+    ID = request[idIndex + 6:]
+    # print("The ID is: " + ID)
+    returnValues = DB.addClient(ID)
+    # print(returnValues)
+    if returnValues == codes.REGISTER_FAIL:
+        responseHandler.registerFail()
+    else:
+        responseHandler.registerSuc(returnValues[1])
+    DB.showTable()
 
 
 def sendKey(request):

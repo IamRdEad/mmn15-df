@@ -1,15 +1,17 @@
 #include <iostream>
 #include <string>
-#include <fstream>
 #include <boost/asio.hpp>
+#include  "fileHandler.h"
+#include "requestHandler.h"
+#include "responseHandler.h"
+#include "CONSTANTS.h"
 
 
 
 using std::string;
 using boost::asio::ip::tcp;
-using std::string;
 
-void transferFile(string& ip, string& port, string& name, string& filePath);
+void flowControl(tcp::socket& s, string& name);
 
 int main() {
 	string ip, port, name, filePath;
@@ -21,36 +23,30 @@ int main() {
 	tcp::socket s(io_context);
 	tcp::resolver resolver(io_context);
 	boost::asio::connect(s, resolver.resolve(ip, port));
-	std::cout << "connected\n";
+	flowControl(s,name);
+
+
 	return 0;
 }
 
 /*
-* the function get the ip, port, name and the name of the client
-* from the transfer.info file
+* this function is responisable for the flow control of the program
 */
-void transferFile(string& ip, string& port, string& name, string&  filePath) {
-	std::ifstream transferFile;
-	transferFile.open("transfer.info");
-	if (!transferFile) {
-		throw std::runtime_error("unable to find transfer.info file");
+void flowControl(tcp::socket& s,  string& name) {
+	std::ifstream meFile;
+	meFile.open(ME_FILE);
+	//if me file not exsits then need to register, if exsits then its reLogin
+	if (!meFile) {
+		std::ofstream meFile(ME_FILE); //create me.info file
+		meFile << name << '\n'; //write the name in the me.info file
+		meFile.close();
+		loginRequest(s,name);
 	}
-	string temp = "";
-	//read the first line which should be the ip.  
-	std::getline(transferFile, temp);
-	//read second line which is the  clientID
-	std::getline(transferFile, name);
-	//read 3rd line which is the path of the file to send
-	std::getline(transferFile, filePath);
-
-	//client id should not be more then 254 (1 for the \0);
-	if (name.length() > 254) {
-		throw std::runtime_error("clientId is too long please try again with shorted id\n");
+	else {
+		reLoginRequest();
 	}
-	//separate the ip from the port
-	size_t index = temp.find(":");
-	ip = temp.substr(0, index);
-	port = temp.substr(index + 1);
-	transferFile.close();
+	
+	meFile.close();
+	getResponse(s);
 
 }

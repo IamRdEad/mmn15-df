@@ -139,10 +139,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="fileHandler.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="requestHandler.cpp" />
+    <ClCompile Include="responseHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CONSTANTS.h" />
+    <ClInclude Include="fileHandler.h" />
+    <ClInclude Include="requestHandler.h" />
+    <ClInclude Include="responseHandler.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

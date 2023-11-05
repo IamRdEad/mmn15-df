@@ -145,9 +145,26 @@ def addClient(ID):
     for row in cur.execute("SELECT * from clients WHERE Name=Name"):
         client = Client(row[0], row[1], row[2], row[3], row[4])
         ClientsList.append(client)
-    return codes.REGISTER_SUC
+    return codes.REGISTER_SUC, uniqueID
 
 
 def updateKey(key, UUID):
     cur.execute("UPDATE clients set publicKey = ? WHERE ID = ?", (key, uuid))
     db_con.commit()
+
+
+def clearTable():
+    cur.execute("DELETE FROM clients")
+    db_con.commit()
+
+
+def showTable():
+    cur.execute("SELECT * FROM clients")
+    rows = cur.fetchall()
+    for description in cur.description:
+        print(description[0], end='\t')
+    print()
+    for row in rows:
+        for value in row:
+            print(value, end='\t')
+        print()
