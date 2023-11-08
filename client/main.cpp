@@ -4,14 +4,17 @@
 #include  "fileHandler.h"
 #include "requestHandler.h"
 #include "responseHandler.h"
-#include "CONSTANTS.h"
-
+#include "utils.h"
+#include "RSAWrapper.h"
+#include "Base64Wrapper.h"
 
 
 using std::string;
 using boost::asio::ip::tcp;
 
 void flowControl(tcp::socket& s, string& name);
+void genrateKeys(tcp::socket& s);
+string readAES();
 
 int main() {
 	string ip, port, name, filePath;
@@ -26,6 +29,7 @@ int main() {
 	flowControl(s,name);
 
 
+
 	return 0;
 }
 
@@ -33,7 +37,10 @@ int main() {
 * this function is responisable for the flow control of the program
 */
 void flowControl(tcp::socket& s,  string& name) {
+	std::remove("me.info");
 	std::ifstream meFile;
+	string UUID = "";
+	string AES_Key = "";
 	meFile.open(ME_FILE);
 	//if me file not exsits then need to register, if exsits then its reLogin
 	if (!meFile) {
@@ -41,12 +48,31 @@ void flowControl(tcp::socket& s,  string& name) {
 		meFile << name << '\n'; //write the name in the me.info file
 		meFile.close();
 		loginRequest(s,name);
+		genrateKeys(s);
 	}
 	else {
 		reLoginRequest();
 	}
-	
+	AES_Key = readAES();
+	sendFile(s, AES_Key);
 	meFile.close();
-	getResponse(s);
-
+}
+string readAES() {
+	std::ifstream AESFile("AES.txt");
+	std::string line;
+	std::getline(AESFile, line);
+	AESFile.close();
+	std::remove("AES.txt"); 
+	return line; 
+}
+void genrateKeys(tcp::socket& s) {
+	RSAPrivateWrapper rsapriv;
+	string publicKey = rsapriv.getPublicKey(); 
+	string privateKey = rsapriv.getPrivateKey();
+	string publicKeyEncoded = Base64Wrapper::encode(publicKey); 
+	std::ofstream privKeyFile;
+	privKeyFile.open("priv.key");
+	privKeyFile << Base64Wrapper::encode(privateKey);
+	privKeyFile.close();
+	sendKey(s, publicKeyEncoded); 
 }

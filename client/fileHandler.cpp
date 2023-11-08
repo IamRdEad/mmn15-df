@@ -1,5 +1,5 @@
 #include "fileHandler.h"
-#include "CONSTANTS.h"
+#include "utils.h"
 
 void transferFile(string& ip, string& port, string& name, string& filePath) {
 	std::ifstream transferFile;
@@ -7,7 +7,7 @@ void transferFile(string& ip, string& port, string& name, string& filePath) {
 	if (!transferFile) {
 		throw std::runtime_error("unable to find transfer.info file");
 	}
-	string temp = "";
+	string temp = " ";
 	//read the first line which should be the ip.  
 	std::getline(transferFile, temp);
 	//read second line which is the  clientID

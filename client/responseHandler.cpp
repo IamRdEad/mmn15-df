@@ -1,5 +1,5 @@
 #include "responseHandler.h"
-#include "CONSTANTS.h"
+#include "utils.h"
 
 
 /*
@@ -7,22 +7,46 @@
 * and act according to the code
 */
 void getResponse(tcp::socket& s) {
-	char response[1024] = { 0 };
+	char response[MAX_LEN] = { 0 };
 	boost::system::error_code error;
-	size_t bytesRead = s.read_some(boost::asio::buffer(response, 1024), error);
+	size_t bytesRead = s.read_some(boost::asio::buffer(response, MAX_LEN), error);
 	string receivedData(response, bytesRead);
-	std::cout << "the response is:\n" << receivedData << std::endl;
+	//std::cout << "the response is:\n" << receivedData << std::endl;
 
 	int code = findCode(response);
 	switch (code)
 	{
-	case 2100:
+	case REGISTER_SUC:
 		registerSuc(response); 
+		break; 
+	case REGISTER_FAIL:
+		registerFail();
+		break;
+	case PRIV_KEY:
+		getPrivateKey(response);
 		break; 
 	default:
 		break;
 	}
+
 }
+
+void registerFail() {
+	throw std::runtime_error("Register Failed");
+}
+
+void getPrivateKey(string response) {
+	//std::cout << "The response from the server with the AES key is:\n" + response;
+	string subString = "AES Key: ";
+	int AESIndex = response.find(subString);
+	int startIndex = AESIndex + subString.length();
+	string AES_key = response.substr(startIndex);
+	//creating AES file with the AES key to esily pass it back to the flow control function 
+	std::ofstream AESFile("AES.txt"); 
+	AESFile << AES_key; 
+	AESFile.close();
+}
+
 /*
 * this function is responsible for finding the UUID 
 * inside a response of a successful registration 
@@ -35,7 +59,6 @@ void registerSuc(string response) {
 	string UUID = response.substr(startIndex);
 	meFile << UUID << std::endl;
 	meFile.close();
-
 }
 
 /*
@@ -55,7 +78,7 @@ int findCode(string response) {
 		code = std::stoi(codeStr); 
 	}
 	catch(const std::exception& e){
-		std::cerr << "caught an exception";
+		std::cerr << "caught an exception" << e.what();
 		//TODO: need to response with general error; 
 	}
 	return code;

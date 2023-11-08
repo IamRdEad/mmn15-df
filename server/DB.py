@@ -149,8 +149,20 @@ def addClient(ID):
 
 
 def updateKey(key, UUID):
-    cur.execute("UPDATE clients set publicKey = ? WHERE ID = ?", (key, uuid))
+    # print("the key is\n", key + "\n\n the  UUID is:\n", UUID)
+    cur.execute("UPDATE clients set publicKey = ? WHERE ID = ?", (key, UUID))
     db_con.commit()
+
+
+def updateAESKey(AESKey, UUID):
+    cur.execute("UPDATE clients set AESKey = ? WHERE ID = ?", (AESKey, UUID))
+    db_con.commit()
+
+
+def getAESKey(UUID):
+    cur.execute("SELECT AESKey FROM clients WHERE ID = ?", (UUID,))
+    AES_Key = cur.fetchone()
+    return AES_Key[0]
 
 
 def clearTable():
