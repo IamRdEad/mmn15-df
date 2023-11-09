@@ -10,8 +10,8 @@ void getResponse(tcp::socket& s) {
 	char response[MAX_LEN] = { 0 };
 	boost::system::error_code error;
 	size_t bytesRead = s.read_some(boost::asio::buffer(response, MAX_LEN), error);
-	string receivedData(response, bytesRead);
-	//std::cout << "the response is:\n" << receivedData << std::endl;
+	//string receivedData(response, bytesRead);
+	std::cout << "The response is:\n" << response << std::endl;
 
 	int code = findCode(response);
 	switch (code)
@@ -25,10 +25,33 @@ void getResponse(tcp::socket& s) {
 	case PRIV_KEY:
 		getPrivateKey(response);
 		break; 
+	case APPROVE_RELOGIN: 
+		getPrivateKey(response);
+		break;
 	default:
 		break;
 	}
 
+}
+
+bool compareCRC(tcp::socket& s) {
+	char responseBuffer[MAX_LEN] = { 0 };
+	boost::system::error_code error;
+	size_t bytesRead = s.read_some(boost::asio::buffer(responseBuffer, MAX_LEN), error);
+	string response(responseBuffer);
+	std::cout << "The response in CRC:\n" << response << std::endl;
+	string filePath = getFilePath();
+	string cksumClient = readfile(filePath);
+	string subString = "Cksum: ";
+	int cksumIndex = response.find(subString);
+	string cksumServer = response.substr(cksumIndex + subString.length());
+	if (cksumClient == cksumServer) {
+		return true;
+	}
+	else {
+		return false; 
+	}
+	return true;
 }
 
 void registerFail() {

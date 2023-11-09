@@ -1,4 +1,5 @@
 import base64
+import os
 import sys
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
@@ -13,9 +14,7 @@ import server
 def findCode(request):
     # print("received  new request from client...")
     codeIndex = request.find("Code:")
-    # print(request)
     code = int(request[codeIndex + 6:codeIndex + 10])
-    # print(code)
     if code == codes.REGISTER:
         register(request)
     elif code == codes.KEY_SEND:
@@ -38,9 +37,7 @@ def findCode(request):
 def register(request):
     idIndex = request.find("Name: ")
     ID = request[idIndex + 6:]
-    # print("The ID is: " + ID)
     returnValues = DB.addClient(ID)
-    # print(returnValues)
     if returnValues == codes.REGISTER_FAIL:
         responseHandler.registerFail()
     else:
@@ -53,19 +50,18 @@ def sendKey(request):
     UUID = getUUID(request)
     DB.updateKey(key, UUID)
     responseHandler.AESKey(key, UUID)
-    # DB.showTable()
 
 
 def relogin(request):
-    pass
+    uuid = getUUID(request)
+    AES_KEY = DB.getAESKey(uuid)
+    responseHandler.reLoginAES(AES_KEY, uuid)
 
 
 def sendFile(request):
-    iv = b"\x00" * 16  # just for practical use should no be set to 0
-    # print(request)
+    iv = b"\x00" * 16  # just for practical use should not be set to 0
     UUID = getUUID(request)
     AES_Key = DB.getAESKey(UUID)
-    # print("The AES key in the server is:", AES_Key)
     fileName = getFileName(request)
     ContentSize = int(getContentSize(request))
     cipher = AES.new(AES_Key, AES.MODE_CBC, iv)
@@ -73,19 +69,16 @@ def sendFile(request):
 
     while ContentSize > 0:
         data = server.getBinaryData()
-        print("the data the server got:", data)
         ContentSize -= len(data)
         decrypted_bytes += cipher.decrypt(data)
 
-        # print("the data after decryption:", decrypted_bytes)
     decrypted_text = unpad(decrypted_bytes, AES.block_size)
-    print(decrypted_text)
 
     with open(fileName, 'wb') as file:
         file.write(decrypted_text)
 
-    crc_value = CRCcalc.readfile(fileName)
-    print("the crc is: ", crc_value)
+    cksum = CRCcalc.readfile(fileName)
+    responseHandler.sendCRC(UUID, os.path.getsize(fileName), fileName, cksum)
 
 
 def validCRC(request):

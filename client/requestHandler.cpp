@@ -6,11 +6,17 @@ void loginRequest(tcp::socket& s, string& name){
 	string request = "Client ID: irrelevant\nVersion: " + std::to_string(VERSION) + "\nCode: " +
 		std::to_string(REGISTER) + "\nPayload size: " + to_string(name.length()) + "\nName: " + name +"\n";
 	//std::cout << request;
-	std::string utf8_request(request);
+	string utf8_request(request);
 	boost::asio::write(s, boost::asio::buffer(utf8_request.c_str(), utf8_request.length()));
 	getResponse(s);
 }
-void reLoginRequest() {
+void reLoginRequest(tcp::socket& s) {
+	string request = createHeader(to_string(RELOGIN));
+	string name = getClientName();
+	request += ("\nPayload size: " + to_string(name.length()) + "\nName: " + name); 
+	string utf8_request(request);
+	boost::asio::write(s, boost::asio::buffer(utf8_request.c_str(), utf8_request.length()));
+	getResponse(s);
 
 }
 
@@ -36,7 +42,7 @@ void sendFile(tcp::socket& s, const string& AES_Key) {
 	RSAPrivateWrapper rsapriv_other(Base64Wrapper::decode(privRSAKey)); 
 	string decodedAESKey = Base64Wrapper::decode(AES_Key);
 	string AES_keyDecrypted = rsapriv_other.decrypt(decodedAESKey);
-	//std::cout <<"The AES key in the client:\n" << toPythonLikeString(AES_keyDecrypted) << std::endl;
+
 	AESWrapper aesWrapper(reinterpret_cast<const unsigned char*>(AES_keyDecrypted.c_str()), AES_keyDecrypted.size());
 
 	//Step 3: Encrypt the data and save it to temporary file
@@ -61,22 +67,41 @@ void sendFile(tcp::socket& s, const string& AES_Key) {
 	tempFileRead.seekg(0, std::ios::beg);
 	string header = createHeader(std::to_string(SEND_FILE));
 	header += ("\nPayload size: " + std::to_string(fileSize) + "\nContent Size: ") + std::to_string(fileSize) + "\nFile Name: " + filePath;
-	//std::cout << header;  
 	std::string utf8_request(header);
 	boost::asio::write(s, boost::asio::buffer(utf8_request.c_str(), utf8_request.length()));
 	while (!tempFileRead.eof()) {
 		tempFileRead.read(buffer, sizeof(buffer));
 		std::streamsize bytesRead = tempFileRead.gcount();
 		if (bytesRead > 0) {
-			std::cout << "the data that is the client send:\n"<< toPythonLikeString(buffer) << std::endl;
 			boost::asio::write(s, boost::asio::buffer(buffer, bytesRead));
 		}
 	}
 	tempFileRead.close();
-	string cksum = readfile(filePath);
-	std::cout << cksum; 
-	//std::remove("EncryptedFile");
+	std::remove("EncryptedFile");
+}
 
+void validCRC(tcp::socket& s) {
+	string fileName = getFilePath();
+	string request = createHeader(to_string(CRC_VALID));
+	request += "\nPayload Size: " + to_string(fileName.length()) + "\nFile Name: " + fileName; 
+	std::string utf8_request(request);
+	boost::asio::write(s, boost::asio::buffer(utf8_request.c_str(), utf8_request.length()));
+}
+
+void invalidCRC(tcp::socket& s) {
+	string fileName = getFilePath();
+	string request = createHeader(to_string(CRC_INVALID));
+	request += "\nPayload Size: " + to_string(fileName.length()) + "\nFile Name: " + fileName;
+	std::string utf8_request(request);
+	boost::asio::write(s, boost::asio::buffer(utf8_request.c_str(), utf8_request.length()));
+}
+
+void failCRC(tcp::socket& s) {
+	string fileName = getFilePath();
+	string request = createHeader(to_string(CRC_FAIL));
+	request += "\nPayload Size: " + to_string(fileName.length()) + "\nFile Name: " + fileName;
+	std::string utf8_request(request);
+	boost::asio::write(s, boost::asio::buffer(utf8_request.c_str(), utf8_request.length()));
 }
 
 string createHeader(string code) {

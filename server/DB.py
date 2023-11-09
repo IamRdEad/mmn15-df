@@ -165,6 +165,12 @@ def getAESKey(UUID):
     return AES_Key[0]
 
 
+def getPublicKey(UUID):
+    cur.execute("SELECT publicKey FROM clients WHERE ID = ?", (UUID,))
+    public_Key = cur.fetchone()
+    return public_Key[0]
+
+
 def clearTable():
     cur.execute("DELETE FROM clients")
     db_con.commit()

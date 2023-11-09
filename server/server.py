@@ -20,6 +20,7 @@ def serverStart(IP, PORT):
         getRequest()
         getRequest()
         getRequest()
+        getRequest()
 
 
 def sendResponse(response):
@@ -28,10 +29,10 @@ def sendResponse(response):
 
 def getRequest():
     global conn
-    data = conn.recv(1024).decode()
-    # print("the data is:\n" + data)
-    if data.startswith("Client ID"):
-        requestHandler.findCode(data)
+    request = conn.recv(1024).decode()
+    print("the request is:\n" + request)
+    if request.startswith("Client ID"):
+        requestHandler.findCode(request)
     else:
         print("invalid request")
 

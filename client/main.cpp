@@ -19,7 +19,6 @@ string readAES();
 int main() {
 	string ip, port, name, filePath;
 	transferFile(ip, port, name, filePath);
-	//std::cout << "IP: " << ip << "\nPort: " << port << "\nName: " << name << "\nFile Path: " << filePath << std::endl;
 
 	//establish connection to the server
 	boost::asio::io_context io_context;
@@ -27,9 +26,6 @@ int main() {
 	tcp::resolver resolver(io_context);
 	boost::asio::connect(s, resolver.resolve(ip, port));
 	flowControl(s,name);
-
-
-
 	return 0;
 }
 
@@ -37,8 +33,8 @@ int main() {
 * this function is responisable for the flow control of the program
 */
 void flowControl(tcp::socket& s,  string& name) {
-	std::remove("me.info");
-	std::remove("priv.key");
+	//std::remove("me.info");
+	//std::remove("priv.key");
 	std::ifstream meFile;
 	string UUID = "";
 	string AES_Key = "";
@@ -52,11 +48,27 @@ void flowControl(tcp::socket& s,  string& name) {
 		genrateKeys(s);
 	}
 	else {
-		reLoginRequest();
+		reLoginRequest(s); 
 	}
-	AES_Key = readAES();
-	sendFile(s, AES_Key);
+
 	meFile.close();
+	AES_Key = readAES();
+	int i = 0;
+	for (; i < 4; i++) {
+		sendFile(s, AES_Key);
+		if (compareCRC(s)) {
+			std::cout << "CRC OK\n";
+			validCRC(s);
+			break;
+		}
+		else {
+			invalidCRC(s);
+			sendFile(s, AES_Key);
+		}
+	}
+	if(i==4){ 
+		failCRC(s);
+	}
 }
 string readAES() {
 	std::ifstream AESFile("AES.txt");

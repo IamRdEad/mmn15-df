@@ -24,7 +24,7 @@ def getPort():
 
 
 def main():
-    DB.clearTable()
+    # DB.clearTable()
     print("getting port number from port.info file...")
     getPort()
     print("setting up server...")

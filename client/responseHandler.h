@@ -4,6 +4,7 @@
 #include <boost/asio.hpp>
 #include <fstream>
 #include "utils.h"
+#include "cksum_new.h"
 
 
 using std::string;
@@ -15,3 +16,4 @@ void sendKey(tcp::socket& s, string publicKey);
 void getPrivateKey(string response);
 void registerFail();
 string createHeader(string code);
+bool compareCRC(tcp::socket& s);
