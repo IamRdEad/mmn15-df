@@ -36,6 +36,7 @@ void sendFile(tcp::socket& s, const string& AES_Key) {
 	RSAPrivateWrapper rsapriv_other(Base64Wrapper::decode(privRSAKey)); 
 	string decodedAESKey = Base64Wrapper::decode(AES_Key);
 	string AES_keyDecrypted = rsapriv_other.decrypt(decodedAESKey);
+	//std::cout <<"The AES key in the client:\n" << toPythonLikeString(AES_keyDecrypted) << std::endl;
 	AESWrapper aesWrapper(reinterpret_cast<const unsigned char*>(AES_keyDecrypted.c_str()), AES_keyDecrypted.size());
 
 	//Step 3: Encrypt the data and save it to temporary file
@@ -67,10 +68,14 @@ void sendFile(tcp::socket& s, const string& AES_Key) {
 		tempFileRead.read(buffer, sizeof(buffer));
 		std::streamsize bytesRead = tempFileRead.gcount();
 		if (bytesRead > 0) {
+			std::cout << "the data that is the client send:\n"<< toPythonLikeString(buffer) << std::endl;
 			boost::asio::write(s, boost::asio::buffer(buffer, bytesRead));
 		}
 	}
 	tempFileRead.close();
+	string cksum = readfile(filePath);
+	std::cout << cksum; 
+	//std::remove("EncryptedFile");
 
 }
 
@@ -79,26 +84,19 @@ string createHeader(string code) {
 	return header; 
 }
 
-	/*
+std::string toPythonLikeString(const std::string& binaryData) {
+	std::ostringstream oss;
+	oss << "b'";
 
-	while (!fileEncryptedRead.eof()) {
-		fileEncryptedRead.read(buffer, sizeof(buffer));
-		int bytesRead = fileEncryptedRead.gcount();
-
-		if (bytesRead > 0) {
-			string encryptedChunk(buffer, bytesRead);
-			string encryptedChunkEncoded = Base64Wrapper::encode(encryptedChunk);
-			string requestWithChunk = request + "Message Content: " + encryptedChunkEncoded;
-			std::cout << requestWithChunk;
-			std::string utf8_request(requestWithChunk);
-			boost::asio::write(s, boost::asio::buffer(utf8_request.c_str(), utf8_request.length()));
+	for (unsigned char c : binaryData) {
+		if (std::isprint(c)) {
+			oss << c;
+		}
+		else {
+			oss << "\\" << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(c);
 		}
 	}
 
-	fileEncryptedRead.close();
-
-	// Clean up the temporary file
-	std::remove("EncryptedFile.txt");
-
-}*/
-
+	oss << "'";
+	return oss.str();
+}

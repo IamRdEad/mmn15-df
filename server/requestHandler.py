@@ -3,6 +3,7 @@ import sys
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
+import CRCcalc
 import DB
 import codes
 import responseHandler
@@ -60,24 +61,31 @@ def relogin(request):
 
 
 def sendFile(request):
-    print(request)
+    iv = b"\x00" * 16  # just for practical use should no be set to 0
+    # print(request)
     UUID = getUUID(request)
     AES_Key = DB.getAESKey(UUID)
+    # print("The AES key in the server is:", AES_Key)
     fileName = getFileName(request)
     ContentSize = int(getContentSize(request))
-    cipher = AES.new(AES_Key, AES.MODE_CBC)
+    cipher = AES.new(AES_Key, AES.MODE_CBC, iv)
     decrypted_bytes = b''
-    # print("File Name is:", fileName)
-    # print("Content Size is:", ContentSize)
 
     while ContentSize > 0:
         data = server.getBinaryData()
+        print("the data the server got:", data)
         ContentSize -= len(data)
-        decryptedChunk = cipher.decrypt(data)
-        decrypted_bytes += decryptedChunk
+        decrypted_bytes += cipher.decrypt(data)
 
-    with open(fileName, 'wb') as file:  # Open the file in binary write mode
-        file.write(decrypted_bytes)
+        # print("the data after decryption:", decrypted_bytes)
+    decrypted_text = unpad(decrypted_bytes, AES.block_size)
+    print(decrypted_text)
+
+    with open(fileName, 'wb') as file:
+        file.write(decrypted_text)
+
+    crc_value = CRCcalc.readfile(fileName)
+    print("the crc is: ", crc_value)
 
 
 def validCRC(request):

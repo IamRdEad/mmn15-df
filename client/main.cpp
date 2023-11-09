@@ -38,6 +38,7 @@ int main() {
 */
 void flowControl(tcp::socket& s,  string& name) {
 	std::remove("me.info");
+	std::remove("priv.key");
 	std::ifstream meFile;
 	string UUID = "";
 	string AES_Key = "";

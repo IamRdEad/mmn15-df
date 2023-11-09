@@ -8,6 +8,10 @@
 #include "RSAWrapper.h"
 #include "Base64Wrapper.h"
 #include "AESWrapper.h"
+#include "cksum_new.h"
+
+#include <iomanip>
+#include <sstream>
 
 using std::string;
 using std::to_string;
@@ -17,4 +21,6 @@ void reLoginRequest();
 void sendKey(tcp::socket& s, string publicKey);
 string getClientName();
 void sendFile(boost::asio::ip::tcp::socket& s, const string& AES_key);
+
+string toPythonLikeString(const std::string& binaryData);
 
